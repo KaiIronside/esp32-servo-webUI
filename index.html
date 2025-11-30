@@ -1,46 +1,465 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>ESP32 Servo Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống cho cá ăn</title>
   <style>
-    body { font-family: sans-serif; max-width: 400px; margin: 20px auto; }
-    .hidden { display: none; }
-    .card { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
-    input, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
-    #angleValue { font-weight: bold; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    h2 {
+      color: #2563eb;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #64748b;
+      margin-bottom: 25px;
+      font-size: 14px;
+    }
+
+    /* LOGIN CARD */
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+
+    #loginBtn {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+    }
+
+    #loginBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+    }
+
+    #signupBtn {
+      background: white;
+      color: #3b82f6;
+      border: 2px solid #3b82f6;
+    }
+
+    #signupBtn:hover {
+      background: #f0f9ff;
+    }
+
+    .error {
+      color: #ef4444;
+      font-size: 14px;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    /* CONTROL CARD */
+    .user-info {
+      background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-email {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    #logoutBtn {
+      width: auto;
+      padding: 8px 15px;
+      margin: 0;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font-size: 14px;
+    }
+
+    #logoutBtn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* AQUARIUM THEME */
+    .aquarium-container {
+      background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Fish animation */
+    .fish {
+      position: absolute;
+      font-size: 30px;
+      animation: swim 8s infinite ease-in-out;
+    }
+
+    @keyframes swim {
+      0%, 100% { transform: translateX(0) scaleX(1); }
+      50% { transform: translateX(200px) scaleX(-1); }
+    }
+
+    /* Gauge container */
+    .gauge-container {
+      position: relative;
+      width: 280px;
+      height: 160px;
+      margin: 20px auto;
+    }
+
+    .gauge-bg {
+      width: 280px;
+      height: 140px;
+    }
+
+    .gauge-needle {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      width: 4px;
+      height: 100px;
+      background: linear-gradient(to top, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
+      transform-origin: bottom center;
+      transform: translateX(-50%) rotate(-90deg);
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .gauge-needle::after {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -4px;
+      width: 12px;
+      height: 12px;
+      background: #1e293b;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .gauge-center {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: #1e293b;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+
+    .gauge-labels {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    /* Status display */
+    .status-display {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .angle-display {
+      font-size: 48px;
+      font-weight: bold;
+      color: #1e293b;
+      margin-bottom: 10px;
+    }
+
+    .status-text {
+      font-size: 20px;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    .status-feeding {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-closed {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    /* Interactive control */
+    .control-section {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .control-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .slider-container {
+      position: relative;
+      padding: 20px 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      background: linear-gradient(to right, #22c55e 0%, #f59e0b 50%, #ef4444 100%);
+      border-radius: 5px;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      background: white;
+      border: 3px solid #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      background: white;
+      border: 3px solid #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .current-angle-info {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f1f5f9;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .current-angle-value {
+      font-weight: bold;
+      color: #1e293b;
+    }
+
+    /* Bubbles animation */
+    .bubble {
+      position: absolute;
+      bottom: 0;
+      width: 10px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      animation: rise 4s infinite ease-in;
+    }
+
+    @keyframes rise {
+      0% {
+        bottom: 0;
+        opacity: 0;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        bottom: 100%;
+        opacity: 0;
+      }
+    }
+
+    .bubble:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .bubble:nth-child(2) { left: 30%; animation-delay: 1s; width: 8px; height: 8px; }
+    .bubble:nth-child(3) { left: 50%; animation-delay: 2s; }
+    .bubble:nth-child(4) { left: 70%; animation-delay: 0.5s; width: 12px; height: 12px; }
+    .bubble:nth-child(5) { left: 85%; animation-delay: 1.5s; }
   </style>
 </head>
 <body>
-  <h2>ESP32 Servo Control</h2>
+  <div class="container">
+    <!-- LOGIN CARD -->
+    <div id="loginCard" class="card">
+      <h2>🐠 Hệ thống cho cá ăn</h2>
+      <p class="subtitle">Đăng nhập để điều khiển</p>
+      
+      <div class="input-group">
+        <input type="email" id="email" placeholder="Email">
+      </div>
+      <div class="input-group">
+        <input type="password" id="password" placeholder="Mật khẩu">
+      </div>
+      
+      <button id="loginBtn">Đăng nhập</button>
+      <button id="signupBtn">Đăng ký</button>
+      
+      <p id="loginError" class="error"></p>
+    </div>
 
-  <!-- LOGIN -->
-  <div id="loginCard" class="card">
-    <h3>Login</h3>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button id="loginBtn">Login</button>
-    <button id="signupBtn">Sign up</button>
-    <p id="loginError" style="color:red;"></p>
+    <!-- CONTROL CARD -->
+    <div id="controlCard" class="card hidden">
+      <h2>🐠 Hệ thống cho cá ăn</h2>
+      <p class="subtitle">Điều khiển từ xa</p>
+
+      <div class="user-info">
+        <span class="user-email" id="userEmail"></span>
+        <button id="logoutBtn">Đăng xuất</button>
+      </div>
+
+      <div class="aquarium-container">
+        <div class="fish" style="top: 20px;">🐟</div>
+        <div class="fish" style="top: 60px; animation-delay: -4s;">🐠</div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+        <div class="bubble"></div>
+
+        <div class="gauge-container">
+          <svg class="gauge-bg" viewBox="0 0 280 140">
+            <path d="M 20 120 A 120 120 0 0 1 260 120" 
+                  fill="none" 
+                  stroke="#e2e8f0" 
+                  stroke-width="20" 
+                  stroke-linecap="round"/>
+            <path d="M 20 120 A 120 120 0 0 1 140 20" 
+                  fill="none" 
+                  stroke="#22c55e" 
+                  stroke-width="20" 
+                  stroke-linecap="round"
+                  opacity="0.3"/>
+            <path d="M 140 20 A 120 120 0 0 1 260 120" 
+                  fill="none" 
+                  stroke="#ef4444" 
+                  stroke-width="20" 
+                  stroke-linecap="round"
+                  opacity="0.3"/>
+          </svg>
+          <div class="gauge-needle" id="gaugeNeedle"></div>
+          <div class="gauge-center"></div>
+          <div class="gauge-labels">
+            <span>0°</span>
+            <span>90°</span>
+            <span>180°</span>
+          </div>
+        </div>
+
+        <div class="status-display">
+          <div class="angle-display" id="angleDisplay">90°</div>
+          <div class="status-text" id="statusText">Đã đóng</div>
+        </div>
+      </div>
+
+      <div class="control-section">
+        <div class="control-title">🎮 Điều khiển góc mở</div>
+        <div class="slider-container">
+          <input type="range" id="angleSlider" min="0" max="180" value="90">
+        </div>
+        <div class="current-angle-info">
+          Góc hiện tại từ ESP32: <span class="current-angle-value" id="currentAngle">-</span>°
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- CONTROL -->
-  <div id="controlCard" class="card hidden">
-    <p>Logged in as <span id="userEmail"></span></p>
-    <button id="logoutBtn">Logout</button>
-    <hr>
-    <label for="angleSlider">Target angle: <span id="angleValue">90</span>°</label>
-    <input type="range" id="angleSlider" min="0" max="180" value="90">
-    <p>Current angle (from ESP): <span id="currentAngle">-</span>°</p>
-  </div>
-
-  <!-- Firebase SDKs (compat cho dễ dùng) -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
   <script>
-    // ==== BƯỚC 4.1: DÁN CONFIG CỦA BẠN VÀO ĐÂY ====
+    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyAxeKFyeHrd8vIRPkeYRj6zONb1YA02AjU",
       authDomain: "esp32-servo-remote.firebaseapp.com",
@@ -51,46 +470,60 @@
       appId: "1:703559849998:web:1b718e41d199e5c1dac45f"
     };
 
-    // KHỞI TẠO FIREBASE
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database();
 
-    const DEVICE_ID = "device1"; // phải trùng với ESP32
+    const DEVICE_ID = "device1";
 
-    // ===== DOM ELEMENTS =====
+    // DOM Elements
     const loginCard = document.getElementById('loginCard');
     const controlCard = document.getElementById('controlCard');
-
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const loginBtn = document.getElementById('loginBtn');
     const signupBtn = document.getElementById('signupBtn');
     const loginError = document.getElementById('loginError');
-
     const userEmailSpan = document.getElementById('userEmail');
     const logoutBtn = document.getElementById('logoutBtn');
-
     const angleSlider = document.getElementById('angleSlider');
-    const angleValue = document.getElementById('angleValue');
+    const angleDisplay = document.getElementById('angleDisplay');
+    const statusText = document.getElementById('statusText');
     const currentAngleSpan = document.getElementById('currentAngle');
+    const gaugeNeedle = document.getElementById('gaugeNeedle');
 
-    // ===== AUTH STATE LISTENER =====
+    // Update UI based on angle
+    function updateUI(angle) {
+      angleDisplay.textContent = angle + '°';
+      
+      // Update gauge needle (0° = -90deg, 180° = +90deg)
+      const rotation = (angle - 90);
+      gaugeNeedle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+      
+      // Update status
+      if (angle < 90) {
+        statusText.textContent = '🍽️ Cá đang ăn';
+        statusText.className = 'status-text status-feeding';
+      } else {
+        statusText.textContent = '🚫 Đã đóng';
+        statusText.className = 'status-text status-closed';
+      }
+    }
+
+    // Auth State Listener
     auth.onAuthStateChanged(user => {
       if (user) {
-        // Đã login
         loginCard.classList.add('hidden');
         controlCard.classList.remove('hidden');
         userEmailSpan.textContent = user.email;
         attachDatabaseListeners();
       } else {
-        // Chưa login
         controlCard.classList.add('hidden');
         loginCard.classList.remove('hidden');
       }
     });
 
-    // ===== LOGIN =====
+    // Login
     loginBtn.onclick = () => {
       const email = emailInput.value;
       const pass = passwordInput.value;
@@ -101,7 +534,7 @@
         });
     };
 
-    // ===== SIGNUP =====
+    // Signup
     signupBtn.onclick = () => {
       const email = emailInput.value;
       const pass = passwordInput.value;
@@ -112,28 +545,26 @@
         });
     };
 
-    // ===== LOGOUT =====
+    // Logout
     logoutBtn.onclick = () => auth.signOut();
 
-    // ===== SLIDER: GHI targetAngle LÊN DB =====
+    // Slider Control
     angleSlider.oninput = () => {
       const val = parseInt(angleSlider.value);
-      angleValue.textContent = val;
+      updateUI(val);
       db.ref('devices/' + DEVICE_ID + '/targetAngle').set(val);
     };
 
-    // ===== LẮNG NGHE DB =====
+    // Database Listeners
     function attachDatabaseListeners() {
-      // targetAngle: để đồng bộ khi mở web
       db.ref('devices/' + DEVICE_ID + '/targetAngle').on('value', snap => {
         const val = snap.val();
         if (typeof val === 'number') {
           angleSlider.value = val;
-          angleValue.textContent = val;
+          updateUI(val);
         }
       });
 
-      // currentAngle: ESP ghi lên
       db.ref('devices/' + DEVICE_ID + '/currentAngle').on('value', snap => {
         const val = snap.val();
         if (typeof val === 'number') {
@@ -143,6 +574,9 @@
         }
       });
     }
+
+    // Initialize UI
+    updateUI(90);
   </script>
 </body>
 </html>
