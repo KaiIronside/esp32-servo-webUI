@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 Servo Control</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 20px auto; }
+    .hidden { display: none; }
+    .card { border: 1px solid #ccc; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+    input, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+    #angleValue { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>ESP32 Servo Control</h2>
+
+  <!-- LOGIN -->
+  <div id="loginCard" class="card">
+    <h3>Login</h3>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="loginBtn">Login</button>
+    <button id="signupBtn">Sign up</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+
+  <!-- CONTROL -->
+  <div id="controlCard" class="card hidden">
+    <p>Logged in as <span id="userEmail"></span></p>
+    <button id="logoutBtn">Logout</button>
+    <hr>
+    <label for="angleSlider">Target angle: <span id="angleValue">90</span>°</label>
+    <input type="range" id="angleSlider" min="0" max="180" value="90">
+    <p>Current angle (from ESP): <span id="currentAngle">-</span>°</p>
+  </div>
+
+  <!-- Firebase SDKs (compat cho dễ dùng) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+  <script>
+    // ==== BƯỚC 4.1: DÁN CONFIG CỦA BẠN VÀO ĐÂY ====
+    const firebaseConfig = {
+      apiKey: "AIzaSyAxeKFyeHrd8vIRPkeYRj6zONb1YA02AjU",
+      authDomain: "esp32-servo-remote.firebaseapp.com",
+      databaseURL: "https://esp32-servo-remote-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "esp32-servo-remote",
+      storageBucket: "esp32-servo-remote.firebasestorage.app",
+      messagingSenderId: "703559849998",
+      appId: "1:703559849998:web:1b718e41d199e5c1dac45f"
+    };
+
+    // KHỞI TẠO FIREBASE
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    const DEVICE_ID = "device1"; // phải trùng với ESP32
+
+    // ===== DOM ELEMENTS =====
+    const loginCard = document.getElementById('loginCard');
+    const controlCard = document.getElementById('controlCard');
+
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const loginError = document.getElementById('loginError');
+
+    const userEmailSpan = document.getElementById('userEmail');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const angleSlider = document.getElementById('angleSlider');
+    const angleValue = document.getElementById('angleValue');
+    const currentAngleSpan = document.getElementById('currentAngle');
+
+    // ===== AUTH STATE LISTENER =====
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        // Đã login
+        loginCard.classList.add('hidden');
+        controlCard.classList.remove('hidden');
+        userEmailSpan.textContent = user.email;
+        attachDatabaseListeners();
+      } else {
+        // Chưa login
+        controlCard.classList.add('hidden');
+        loginCard.classList.remove('hidden');
+      }
+    });
+
+    // ===== LOGIN =====
+    loginBtn.onclick = () => {
+      const email = emailInput.value;
+      const pass = passwordInput.value;
+      loginError.textContent = "";
+      auth.signInWithEmailAndPassword(email, pass)
+        .catch(err => {
+          loginError.textContent = err.message;
+        });
+    };
+
+    // ===== SIGNUP =====
+    signupBtn.onclick = () => {
+      const email = emailInput.value;
+      const pass = passwordInput.value;
+      loginError.textContent = "";
+      auth.createUserWithEmailAndPassword(email, pass)
+        .catch(err => {
+          loginError.textContent = err.message;
+        });
+    };
+
+    // ===== LOGOUT =====
+    logoutBtn.onclick = () => auth.signOut();
+
+    // ===== SLIDER: GHI targetAngle LÊN DB =====
+    angleSlider.oninput = () => {
+      const val = parseInt(angleSlider.value);
+      angleValue.textContent = val;
+      db.ref('devices/' + DEVICE_ID + '/targetAngle').set(val);
+    };
+
+    // ===== LẮNG NGHE DB =====
+    function attachDatabaseListeners() {
+      // targetAngle: để đồng bộ khi mở web
+      db.ref('devices/' + DEVICE_ID + '/targetAngle').on('value', snap => {
+        const val = snap.val();
+        if (typeof val === 'number') {
+          angleSlider.value = val;
+          angleValue.textContent = val;
+        }
+      });
+
+      // currentAngle: ESP ghi lên
+      db.ref('devices/' + DEVICE_ID + '/currentAngle').on('value', snap => {
+        const val = snap.val();
+        if (typeof val === 'number') {
+          currentAngleSpan.textContent = val;
+        } else {
+          currentAngleSpan.textContent = '-';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
