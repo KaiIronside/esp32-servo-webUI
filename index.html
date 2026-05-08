@@ -1,582 +1,800 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ thống cho cá ăn</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎯 Target Shooter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    .container {
-      width: 100%;
-      max-width: 500px;
-    }
+  body {
+    background: #0a0c0f;
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    cursor: none;
+    user-select: none;
+  }
 
-    .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(10px);
-    }
+  #gameCanvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+  }
 
-    .hidden {
-      display: none;
-    }
+  #ui {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 24px;
+    pointer-events: none;
+    z-index: 10;
+  }
 
-    h2 {
-      color: #2563eb;
-      text-align: center;
-      margin-bottom: 10px;
-      font-size: 28px;
-    }
+  .stat-box {
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,220,50,0.4);
+    border-radius: 4px;
+    padding: 8px 16px;
+    text-align: center;
+  }
 
-    .subtitle {
-      text-align: center;
-      color: #64748b;
-      margin-bottom: 25px;
-      font-size: 14px;
-    }
+  .stat-label {
+    font-size: 10px;
+    color: rgba(255,220,50,0.6);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
 
-    /* LOGIN CARD */
-    .input-group {
-      margin-bottom: 15px;
-    }
+  .stat-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffdc32;
+  }
 
-    input[type="email"],
-    input[type="password"] {
-      width: 100%;
-      padding: 12px 15px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 16px;
-      transition: border-color 0.3s;
-    }
+  #timerBar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    z-index: 10;
+    pointer-events: none;
+  }
 
-    input[type="email"]:focus,
-    input[type="password"]:focus {
-      outline: none;
-      border-color: #3b82f6;
-    }
+  #timerFill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #ffdc32, #ff4444);
+    background-size: 300% 100%;
+    transition: width 0.05s linear;
+    border-radius: 0 3px 3px 0;
+  }
 
-    button {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      margin-top: 10px;
-    }
+  #crosshairInfo {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
 
-    #loginBtn {
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-    }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
 
-    #loginBtn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
-    }
+  #overlay h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(32px, 6vw, 72px);
+    font-weight: 900;
+    color: #ffdc32;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    text-shadow: 0 0 40px rgba(255,220,50,0.5);
+  }
 
-    #signupBtn {
-      background: white;
-      color: #3b82f6;
-      border: 2px solid #3b82f6;
-    }
+  #overlay .sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 3px;
+    margin-bottom: 48px;
+  }
 
-    #signupBtn:hover {
-      background: #f0f9ff;
-    }
+  .score-display {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(48px, 10vw, 120px);
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
 
-    .error {
-      color: #ef4444;
-      font-size: 14px;
-      margin-top: 10px;
-      text-align: center;
-    }
+  .score-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+  }
 
-    /* CONTROL CARD */
-    .user-info {
-      background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+  .stats-row {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 48px;
+  }
 
-    .user-email {
-      font-size: 14px;
-      opacity: 0.9;
-    }
+  .stat-item {
+    text-align: center;
+  }
 
-    #logoutBtn {
-      width: auto;
-      padding: 8px 15px;
-      margin: 0;
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      font-size: 14px;
-    }
+  .stat-item .val {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffdc32;
+  }
 
-    #logoutBtn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
+  .stat-item .lbl {
+    font-size: 10px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 2px;
+    margin-top: 4px;
+  }
 
-    /* AQUARIUM THEME */
-    .aquarium-container {
-      background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 20px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
+  .btn-start {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 14px 48px;
+    background: transparent;
+    border: 2px solid #ffdc32;
+    color: #ffdc32;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
 
-    /* Fish animation */
-    .fish {
-      position: absolute;
-      font-size: 30px;
-      animation: swim 8s infinite ease-in-out;
-    }
+  .btn-start:hover {
+    background: #ffdc32;
+    color: #0a0c0f;
+    box-shadow: 0 0 30px rgba(255,220,50,0.4);
+  }
 
-    @keyframes swim {
-      0%, 100% { transform: translateX(0) scaleX(1); }
-      50% { transform: translateX(200px) scaleX(-1); }
-    }
+  .miss-flash {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,0,0,0.15);
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.05s;
+  }
 
-    /* Gauge container */
-    .gauge-container {
-      position: relative;
-      width: 280px;
-      height: 160px;
-      margin: 20px auto;
-    }
+  .hit-flash {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,255,100,0.08);
+    pointer-events: none;
+    z-index: 50;
+    opacity: 0;
+    transition: opacity 0.05s;
+  }
 
-    .gauge-bg {
-      width: 280px;
-      height: 140px;
-    }
+  #levelBadge {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-family: 'Orbitron', monospace;
+    font-size: 48px;
+    font-weight: 900;
+    color: #ffdc32;
+    text-shadow: 0 0 60px rgba(255,220,50,0.8);
+    pointer-events: none;
+    z-index: 60;
+    transition: transform 0.2s, opacity 0.3s;
+    opacity: 0;
+  }
 
-    .gauge-needle {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      width: 4px;
-      height: 100px;
-      background: linear-gradient(to top, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
-      transform-origin: bottom center;
-      transform: translateX(-50%) rotate(-90deg);
-      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: 2px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    }
+  .ammo-counter {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin-top: 4px;
+    justify-content: center;
+  }
 
-    .gauge-needle::after {
-      content: '';
-      position: absolute;
-      top: -8px;
-      left: -4px;
-      width: 12px;
-      height: 12px;
-      background: #1e293b;
-      border-radius: 50%;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-    }
+  .bullet-dot {
+    width: 6px;
+    height: 10px;
+    background: #ffdc32;
+    border-radius: 2px;
+    display: inline-block;
+  }
 
-    .gauge-center {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 20px;
-      height: 20px;
-      background: #1e293b;
-      border-radius: 50%;
-      border: 3px solid white;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-      z-index: 10;
-    }
-
-    .gauge-labels {
-      position: absolute;
-      bottom: 10px;
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 20px;
-      font-size: 12px;
-      font-weight: 600;
-      color: #475569;
-    }
-
-    /* Status display */
-    .status-display {
-      text-align: center;
-      margin: 20px 0;
-    }
-
-    .angle-display {
-      font-size: 48px;
-      font-weight: bold;
-      color: #1e293b;
-      margin-bottom: 10px;
-    }
-
-    .status-text {
-      font-size: 20px;
-      font-weight: 600;
-      padding: 10px 20px;
-      border-radius: 10px;
-      display: inline-block;
-    }
-
-    .status-feeding {
-      background: #dcfce7;
-      color: #16a34a;
-    }
-
-    .status-closed {
-      background: #fee2e2;
-      color: #dc2626;
-    }
-
-    /* Interactive control */
-    .control-section {
-      background: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    }
-
-    .control-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #334155;
-      margin-bottom: 15px;
-      text-align: center;
-    }
-
-    .slider-container {
-      position: relative;
-      padding: 20px 0;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 8px;
-      background: linear-gradient(to right, #22c55e 0%, #f59e0b 50%, #ef4444 100%);
-      border-radius: 5px;
-      outline: none;
-      -webkit-appearance: none;
-      cursor: pointer;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 24px;
-      height: 24px;
-      background: white;
-      border: 3px solid #3b82f6;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s;
-    }
-
-    input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
-      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
-    }
-
-    input[type="range"]::-moz-range-thumb {
-      width: 24px;
-      height: 24px;
-      background: white;
-      border: 3px solid #3b82f6;
-      border-radius: 50%;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .current-angle-info {
-      margin-top: 15px;
-      padding: 10px;
-      background: #f1f5f9;
-      border-radius: 8px;
-      text-align: center;
-      font-size: 14px;
-      color: #64748b;
-    }
-
-    .current-angle-value {
-      font-weight: bold;
-      color: #1e293b;
-    }
-
-    /* Bubbles animation */
-    .bubble {
-      position: absolute;
-      bottom: 0;
-      width: 10px;
-      height: 10px;
-      background: rgba(255, 255, 255, 0.5);
-      border-radius: 50%;
-      animation: rise 4s infinite ease-in;
-    }
-
-    @keyframes rise {
-      0% {
-        bottom: 0;
-        opacity: 0;
-      }
-      50% {
-        opacity: 1;
-      }
-      100% {
-        bottom: 100%;
-        opacity: 0;
-      }
-    }
-
-    .bubble:nth-child(1) { left: 10%; animation-delay: 0s; }
-    .bubble:nth-child(2) { left: 30%; animation-delay: 1s; width: 8px; height: 8px; }
-    .bubble:nth-child(3) { left: 50%; animation-delay: 2s; }
-    .bubble:nth-child(4) { left: 70%; animation-delay: 0.5s; width: 12px; height: 12px; }
-    .bubble:nth-child(5) { left: 85%; animation-delay: 1.5s; }
-  </style>
+  .bullet-dot.empty {
+    background: rgba(255,220,50,0.2);
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <!-- LOGIN CARD -->
-    <div id="loginCard" class="card">
-      <h2>🐠 Hệ thống cho cá ăn</h2>
-      <p class="subtitle">Đăng nhập để điều khiển</p>
-      
-      <div class="input-group">
-        <input type="email" id="email" placeholder="Email">
-      </div>
-      <div class="input-group">
-        <input type="password" id="password" placeholder="Mật khẩu">
-      </div>
-      
-      <button id="loginBtn">Đăng nhập</button>
-      <button id="signupBtn">Đăng ký</button>
-      
-      <p id="loginError" class="error"></p>
-    </div>
 
-    <!-- CONTROL CARD -->
-    <div id="controlCard" class="card hidden">
-      <h2>🐠 Hệ thống cho cá ăn</h2>
-      <p class="subtitle">Điều khiển từ xa</p>
+<canvas id="gameCanvas"></canvas>
 
-      <div class="user-info">
-        <span class="user-email" id="userEmail"></span>
-        <button id="logoutBtn">Đăng xuất</button>
-      </div>
-
-      <div class="aquarium-container">
-        <div class="fish" style="top: 20px;">🐟</div>
-        <div class="fish" style="top: 60px; animation-delay: -4s;">🐠</div>
-        <div class="bubble"></div>
-        <div class="bubble"></div>
-        <div class="bubble"></div>
-        <div class="bubble"></div>
-        <div class="bubble"></div>
-
-        <div class="gauge-container">
-          <svg class="gauge-bg" viewBox="0 0 280 140">
-            <path d="M 20 120 A 120 120 0 0 1 260 120" 
-                  fill="none" 
-                  stroke="#e2e8f0" 
-                  stroke-width="20" 
-                  stroke-linecap="round"/>
-            <path d="M 20 120 A 120 120 0 0 1 140 20" 
-                  fill="none" 
-                  stroke="#22c55e" 
-                  stroke-width="20" 
-                  stroke-linecap="round"
-                  opacity="0.3"/>
-            <path d="M 140 20 A 120 120 0 0 1 260 120" 
-                  fill="none" 
-                  stroke="#ef4444" 
-                  stroke-width="20" 
-                  stroke-linecap="round"
-                  opacity="0.3"/>
-          </svg>
-          <div class="gauge-needle" id="gaugeNeedle"></div>
-          <div class="gauge-center"></div>
-          <div class="gauge-labels">
-            <span>0°</span>
-            <span>90°</span>
-            <span>180°</span>
-          </div>
-        </div>
-
-        <div class="status-display">
-          <div class="angle-display" id="angleDisplay">90°</div>
-          <div class="status-text" id="statusText">Đã đóng</div>
-        </div>
-      </div>
-
-      <div class="control-section">
-        <div class="control-title">🎮 Điều khiển góc mở</div>
-        <div class="slider-container">
-          <input type="range" id="angleSlider" min="0" max="180" value="90">
-        </div>
-        <div class="current-angle-info">
-          Góc hiện tại từ ESP32: <span class="current-angle-value" id="currentAngle">-</span>°
-        </div>
-      </div>
-    </div>
+<div id="ui">
+  <div class="stat-box">
+    <div class="stat-label">Score</div>
+    <div class="stat-value" id="scoreDisplay">0</div>
   </div>
+  <div class="stat-box">
+    <div class="stat-label">Streak</div>
+    <div class="stat-value" id="streakDisplay">x1</div>
+    <div style="font-size:10px; color:rgba(255,220,50,0.4); margin-top:2px" id="comboDisplay"></div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-label">Time</div>
+    <div class="stat-value" id="timeDisplay">5.0</div>
+  </div>
+</div>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+<div id="timerBar"><div id="timerFill" style="width:100%"></div></div>
 
-  <script>
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyAxeKFyeHrd8vIRPkeYRj6zONb1YA02AjU",
-      authDomain: "esp32-servo-remote.firebaseapp.com",
-      databaseURL: "https://esp32-servo-remote-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "esp32-servo-remote",
-      storageBucket: "esp32-servo-remote.firebasestorage.app",
-      messagingSenderId: "703559849998",
-      appId: "1:703559849998:web:1b718e41d199e5c1dac45f"
-    };
+<div class="miss-flash" id="missFlash"></div>
+<div class="hit-flash" id="hitFlash"></div>
+<div id="levelBadge"></div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.database();
+<div id="crosshairInfo">CLICK TO SHOOT</div>
 
-    const DEVICE_ID = "device1";
+<div id="overlay">
+  <h1>TARGET SHOOTER</h1>
+  <div class="sub">PRECISION TRAINING SIMULATOR</div>
+  <div class="score-display" id="finalScore" style="display:none">0</div>
+  <div class="score-label" id="finalLabel" style="display:none">FINAL SCORE</div>
+  <div class="stats-row" id="finalStats" style="display:none">
+    <div class="stat-item"><div class="val" id="fHits">0</div><div class="lbl">Hits</div></div>
+    <div class="stat-item"><div class="val" id="fMisses">0</div><div class="lbl">Misses</div></div>
+    <div class="stat-item"><div class="val" id="fAcc">0%</div><div class="lbl">Accuracy</div></div>
+    <div class="stat-item"><div class="val" id="fBest">0</div><div class="lbl">Best Streak</div></div>
+  </div>
+  <button class="btn-start" id="startBtn" onclick="startGame()">START GAME</button>
+</div>
 
-    // DOM Elements
-    const loginCard = document.getElementById('loginCard');
-    const controlCard = document.getElementById('controlCard');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const loginBtn = document.getElementById('loginBtn');
-    const signupBtn = document.getElementById('signupBtn');
-    const loginError = document.getElementById('loginError');
-    const userEmailSpan = document.getElementById('userEmail');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const angleSlider = document.getElementById('angleSlider');
-    const angleDisplay = document.getElementById('angleDisplay');
-    const statusText = document.getElementById('statusText');
-    const currentAngleSpan = document.getElementById('currentAngle');
-    const gaugeNeedle = document.getElementById('gaugeNeedle');
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-    // Update UI based on angle
-    function updateUI(angle) {
-      angleDisplay.textContent = angle + '°';
-      
-      // Update gauge needle (0° = -90deg, 180° = +90deg)
-      const rotation = (angle - 90);
-      gaugeNeedle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
-      
-      // Update status
-      if (angle < 90) {
-        statusText.textContent = '🍽️ Cá đang ăn';
-        statusText.className = 'status-text status-feeding';
-      } else {
-        statusText.textContent = '🚫 Đã đóng';
-        statusText.className = 'status-text status-closed';
-      }
+let W, H;
+let mouseX = 0, mouseY = 0;
+let gameRunning = false;
+let score = 0, streak = 0, bestStreak = 0;
+let hits = 0, misses = 0;
+let targets = [];
+let particles = [];
+let muzzleFlash = 0;
+let timeLeft = 5.0;
+let maxTime = 5.0;
+let timerDecay = 0;
+let level = 1;
+let targetSpawnTime = 0;
+let spawnInterval = 0.6;
+let maxTargetsOnScreen = 2;
+let waveTimer = 0;
+let waveCooldown = 0;
+let totalHits = 0;
+let floatingTexts = [];
+let gunRecoil = 0;
+let shotRings = [];
+let lastTime = 0;
+let missedLastShot = false;
+let bgStars = [];
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function generateStars() {
+  bgStars = [];
+  for (let i = 0; i < 200; i++) {
+    bgStars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5,
+      a: Math.random() * 0.6 + 0.1
+    });
+  }
+}
+generateStars();
+
+window.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+});
+
+window.addEventListener('click', e => {
+  if (!gameRunning) return;
+  shoot(e.clientX, e.clientY);
+});
+
+window.addEventListener('contextmenu', e => e.preventDefault());
+
+class Target {
+  constructor() {
+    this.reset();
+    this.opacity = 0;
+    this.born = Date.now();
+    this.hit = false;
+    this.hitTime = 0;
+    this.scale = 1;
+    this.vx = (Math.random() - 0.5) * (1 + level * 0.3);
+    this.vy = (Math.random() - 0.5) * (1 + level * 0.3);
+    this.rotation = 0;
+    this.rotSpeed = (Math.random() - 0.5) * 0.02;
+  }
+
+  reset() {
+    const margin = 120;
+    this.baseRadius = 80 - level * 3;
+    if (this.baseRadius < 30) this.baseRadius = 30;
+    this.x = margin + Math.random() * (W - margin * 2);
+    this.y = margin + Math.random() * (H * 0.65 - margin);
+    this.radius = this.baseRadius;
+  }
+
+  update(dt) {
+    if (this.hit) {
+      this.scale += (0 - this.scale) * 0.15;
+      this.opacity = Math.max(0, this.opacity - 0.08);
+      return;
+    }
+    this.opacity = Math.min(1, this.opacity + 0.05);
+    this.x += this.vx;
+    this.y += this.vy;
+    this.rotation += this.rotSpeed;
+
+    if (this.x < this.radius || this.x > W - this.radius) this.vx *= -1;
+    if (this.y < this.radius || this.y > H * 0.72 - this.radius) this.vy *= -1;
+    this.x = Math.max(this.radius, Math.min(W - this.radius, this.x));
+    this.y = Math.max(this.radius, Math.min(H * 0.72 - this.radius, this.y));
+  }
+
+  getScore(px, py) {
+    const dist = Math.hypot(px - this.x, py - this.y);
+    const r = this.radius;
+    if (dist > r) return 0;
+    const ratio = 1 - dist / r;
+    if (ratio > 0.8) return 10;
+    if (ratio > 0.6) return 8;
+    if (ratio > 0.4) return 6;
+    if (ratio > 0.2) return 4;
+    return 2;
+  }
+
+  draw() {
+    if (this.opacity <= 0) return;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rotation);
+    ctx.scale(this.scale, this.scale);
+    ctx.globalAlpha = this.opacity;
+
+    const rings = [
+      { r: 1.0,   color: '#1a1a2e', stroke: '#ffffff' },
+      { r: 0.8,   color: '#c0392b', stroke: '#ff6b6b' },
+      { r: 0.6,   color: '#ffffff', stroke: '#ffffff' },
+      { r: 0.4,   color: '#c0392b', stroke: '#ff4444' },
+      { r: 0.2,   color: '#ffffff', stroke: '#ffffff' },
+      { r: 0.1,   color: '#ffdc32', stroke: '#ffdc32' },
+    ];
+
+    for (const ring of rings) {
+      ctx.beginPath();
+      ctx.arc(0, 0, this.radius * ring.r, 0, Math.PI * 2);
+      ctx.fillStyle = ring.color;
+      ctx.fill();
+      ctx.strokeStyle = ring.stroke;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = this.opacity * 0.6;
+      ctx.stroke();
+      ctx.globalAlpha = this.opacity;
     }
 
-    // Auth State Listener
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        loginCard.classList.add('hidden');
-        controlCard.classList.remove('hidden');
-        userEmailSpan.textContent = user.email;
-        attachDatabaseListeners();
-      } else {
-        controlCard.classList.add('hidden');
-        loginCard.classList.remove('hidden');
+    ctx.beginPath();
+    ctx.moveTo(-this.radius * 1.2, 0);
+    ctx.lineTo(this.radius * 1.2, 0);
+    ctx.moveTo(0, -this.radius * 1.2);
+    ctx.lineTo(0, this.radius * 1.2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+function spawnParticles(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 6 + 2;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      decay: Math.random() * 0.04 + 0.03,
+      r: Math.random() * 4 + 2,
+      color
+    });
+  }
+}
+
+function shoot(px, py) {
+  muzzleFlash = 1;
+  gunRecoil = 1;
+
+  shotRings.push({ x: px, y: py, r: 0, maxR: 80, life: 1 });
+
+  let hitSomething = false;
+  let bestScore = 0;
+  let hitTarget = null;
+
+  for (const t of targets) {
+    if (t.hit) continue;
+    const pts = t.getScore(px, py);
+    if (pts > 0) {
+      if (pts > bestScore) {
+        bestScore = pts;
+        hitTarget = t;
       }
+      hitSomething = true;
+    }
+  }
+
+  if (hitTarget) {
+    hitTarget.hit = true;
+    hitTarget.hitTime = Date.now();
+    hits++;
+    totalHits++;
+    streak++;
+    if (streak > bestStreak) bestStreak = streak;
+
+    const multiplier = streak >= 5 ? 3 : streak >= 3 ? 2 : 1;
+    const earned = bestScore * multiplier;
+    score += earned;
+
+    timeLeft = Math.min(maxTime, timeLeft + 1.5);
+
+    spawnParticles(hitTarget.x, hitTarget.y, bestScore === 10 ? '#ffdc32' : '#ff6b6b', bestScore === 10 ? 20 : 12);
+
+    floatingTexts.push({
+      x: hitTarget.x, y: hitTarget.y - hitTarget.radius,
+      text: (multiplier > 1 ? `x${multiplier} ` : '') + `+${earned}`,
+      color: bestScore === 10 ? '#ffdc32' : '#00ff88',
+      life: 1, vy: -2, size: bestScore === 10 ? 32 : 24
     });
 
-    // Login
-    loginBtn.onclick = () => {
-      const email = emailInput.value;
-      const pass = passwordInput.value;
-      loginError.textContent = "";
-      auth.signInWithEmailAndPassword(email, pass)
-        .catch(err => {
-          loginError.textContent = err.message;
-        });
-    };
+    document.getElementById('hitFlash').style.opacity = '1';
+    setTimeout(() => document.getElementById('hitFlash').style.opacity = '0', 80);
 
-    // Signup
-    signupBtn.onclick = () => {
-      const email = emailInput.value;
-      const pass = passwordInput.value;
-      loginError.textContent = "";
-      auth.createUserWithEmailAndPassword(email, pass)
-        .catch(err => {
-          loginError.textContent = err.message;
-        });
-    };
+    updateUI();
+  } else {
+    misses++;
+    streak = 0;
+    missedLastShot = true;
+    timeLeft = Math.max(0.3, timeLeft - 0.5);
 
-    // Logout
-    logoutBtn.onclick = () => auth.signOut();
+    spawnParticles(px, py, '#444', 6);
 
-    // Slider Control
-    angleSlider.oninput = () => {
-      const val = parseInt(angleSlider.value);
-      updateUI(val);
-      db.ref('devices/' + DEVICE_ID + '/targetAngle').set(val);
-    };
+    document.getElementById('missFlash').style.opacity = '1';
+    setTimeout(() => document.getElementById('missFlash').style.opacity = '0', 120);
 
-    // Database Listeners
-    function attachDatabaseListeners() {
-      db.ref('devices/' + DEVICE_ID + '/targetAngle').on('value', snap => {
-        const val = snap.val();
-        if (typeof val === 'number') {
-          angleSlider.value = val;
-          updateUI(val);
-        }
-      });
+    updateUI();
+  }
+}
 
-      db.ref('devices/' + DEVICE_ID + '/currentAngle').on('value', snap => {
-        const val = snap.val();
-        if (typeof val === 'number') {
-          currentAngleSpan.textContent = val;
-        } else {
-          currentAngleSpan.textContent = '-';
-        }
-      });
+function updateUI() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('streakDisplay').textContent = 'x' + (streak >= 5 ? 3 : streak >= 3 ? 2 : 1);
+  const combo = streak >= 5 ? '🔥 HOT' : streak >= 3 ? 'COMBO' : '';
+  document.getElementById('comboDisplay').textContent = combo;
+}
+
+function drawGun() {
+  const cx = W / 2;
+  const cy = H;
+  const recoilOffset = gunRecoil * 20;
+
+  ctx.save();
+  ctx.translate(cx, cy + recoilOffset);
+
+  const angle = Math.atan2(mouseY - (cy + recoilOffset), mouseX - cx);
+  ctx.rotate(angle - Math.PI / 2);
+
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = 'rgba(0,150,255,0.4)';
+
+  ctx.fillStyle = '#1a1f2e';
+  ctx.beginPath();
+  ctx.roundRect(-18, -120, 36, 90, 6);
+  ctx.fill();
+
+  ctx.fillStyle = '#141820';
+  ctx.beginPath();
+  ctx.roundRect(-22, -140, 44, 60, 4);
+  ctx.fill();
+
+  ctx.strokeStyle = 'rgba(100,150,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-22, -140, 44, 60);
+
+  ctx.fillStyle = '#0d1017';
+  ctx.beginPath();
+  ctx.roundRect(-8, -145, 16, 70, 3);
+  ctx.fill();
+
+  if (muzzleFlash > 0) {
+    const alpha = muzzleFlash;
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = `rgba(255,200,50,${alpha})`;
+    ctx.fillStyle = `rgba(255,200,50,${alpha * 0.9})`;
+    ctx.beginPath();
+    ctx.ellipse(0, -155, 12 * alpha, 20 * alpha, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,255,200,${alpha})`;
+    ctx.beginPath();
+    ctx.ellipse(0, -158, 5 * alpha, 8 * alpha, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#252b3d';
+  ctx.beginPath();
+  ctx.roundRect(-22, -70, 44, 30, [0, 0, 6, 6]);
+  ctx.fill();
+
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(-15 + i * 10, -64, 6, 18);
+  }
+
+  ctx.restore();
+
+  gunRecoil *= 0.8;
+  if (gunRecoil < 0.01) gunRecoil = 0;
+}
+
+function drawCrosshair() {
+  const x = mouseX, y = mouseY;
+  const size = 20;
+  const gap = 6;
+  const thickness = 2;
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = thickness;
+  ctx.shadowBlur = 8;
+  ctx.shadowColor = 'rgba(255,255,255,0.5)';
+
+  ctx.beginPath();
+  ctx.moveTo(x - size, y);
+  ctx.lineTo(x - gap, y);
+  ctx.moveTo(x + gap, y);
+  ctx.lineTo(x + size, y);
+  ctx.moveTo(x, y - size);
+  ctx.lineTo(x, y - gap);
+  ctx.moveTo(x, y + gap);
+  ctx.lineTo(x, y + size);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x, y, gap, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,50,50,0.8)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,50,50,0.6)';
+  ctx.beginPath();
+  ctx.arc(x, y, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawBackground() {
+  ctx.fillStyle = '#0a0c0f';
+  ctx.fillRect(0, 0, W, H);
+
+  for (const s of bgStars) {
+    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const grad = ctx.createLinearGradient(0, H * 0.6, 0, H);
+  grad.addColorStop(0, 'transparent');
+  grad.addColorStop(1, 'rgba(0,30,60,0.4)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, H * 0.6, W, H * 0.4);
+
+  ctx.strokeStyle = 'rgba(0,100,255,0.1)';
+  ctx.lineWidth = 1;
+  const gridSize = 60;
+  for (let x = 0; x < W; x += gridSize) {
+    ctx.beginPath();
+    ctx.moveTo(x, H * 0.6);
+    ctx.lineTo(x - 200, H * 1.5);
+    ctx.stroke();
+  }
+  for (let i = 0; i < 8; i++) {
+    const yPos = H * 0.6 + i * 30;
+    ctx.beginPath();
+    ctx.moveTo(0, yPos);
+    ctx.lineTo(W, yPos);
+    ctx.globalAlpha = 0.05 + i * 0.01;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawShotRings() {
+  for (const ring of shotRings) {
+    ctx.beginPath();
+    ctx.arc(ring.x, ring.y, ring.r, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(255,255,255,${ring.life * 0.5})`;
+    ctx.lineWidth = 2 * ring.life;
+    ctx.stroke();
+    ring.r += (ring.maxR - ring.r) * 0.15;
+    ring.life -= 0.07;
+  }
+  shotRings = shotRings.filter(r => r.life > 0);
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = p.life;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.2;
+    p.life -= p.decay;
+  }
+  ctx.globalAlpha = 1;
+  particles = particles.filter(p => p.life > 0);
+}
+
+function drawFloatingTexts() {
+  for (const ft of floatingTexts) {
+    ctx.font = `bold ${ft.size}px 'Orbitron', monospace`;
+    ctx.fillStyle = ft.color;
+    ctx.globalAlpha = ft.life;
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ft.y += ft.vy;
+    ft.life -= 0.025;
+  }
+  ctx.globalAlpha = 1;
+  floatingTexts = floatingTexts.filter(f => f.life > 0);
+}
+
+function drawTimer() {
+  const pct = timeLeft / maxTime;
+  document.getElementById('timerFill').style.width = (pct * 100) + '%';
+  document.getElementById('timerFill').style.backgroundPosition = ((1 - pct) * 100) + '% 0';
+
+  const color = pct > 0.5 ? '#00ff88' : pct > 0.25 ? '#ffdc32' : '#ff4444';
+  document.getElementById('timeDisplay').style.color = color;
+  document.getElementById('timeDisplay').textContent = timeLeft.toFixed(1);
+}
+
+function startGame() {
+  document.getElementById('overlay').style.display = 'none';
+  gameRunning = true;
+  score = 0; streak = 0; bestStreak = 0; hits = 0; misses = 0;
+  targets = []; particles = []; floatingTexts = [];
+  timeLeft = 5.0; maxTime = 5.0; level = 1; timerDecay = 0;
+  targetSpawnTime = 0; spawnInterval = 0.6;
+  maxTargetsOnScreen = 2; waveTimer = 0; waveCooldown = 0; totalHits = 0;
+  updateUI();
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+  gameRunning = false;
+  const acc = hits + misses > 0 ? Math.round(hits / (hits + misses) * 100) : 0;
+
+  document.getElementById('finalScore').style.display = 'block';
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('finalLabel').style.display = 'block';
+  document.getElementById('finalStats').style.display = 'flex';
+  document.getElementById('fHits').textContent = hits;
+  document.getElementById('fMisses').textContent = misses;
+  document.getElementById('fAcc').textContent = acc + '%';
+  document.getElementById('fBest').textContent = bestStreak;
+  document.getElementById('startBtn').textContent = 'PLAY AGAIN';
+  document.getElementById('overlay').style.display = 'flex';
+}
+
+function gameLoop(now) {
+  if (!gameRunning) return;
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  timeLeft -= dt * (0.5 + timerDecay);
+  timerDecay += dt * 0.015;
+  maxTime = Math.max(2.0, 5.0 - timerDecay * 0.5);
+
+  waveTimer += dt;
+  waveCooldown = Math.max(0, waveCooldown - dt);
+
+  const elapsed = timerDecay / 0.015;
+  maxTargetsOnScreen = Math.min(6, 2 + Math.floor(elapsed / 8));
+  spawnInterval = Math.max(0.18, 0.6 - elapsed * 0.025);
+
+  const activeCount = targets.filter(t => !t.hit).length;
+
+  if (waveCooldown <= 0 && waveTimer >= spawnInterval) {
+    waveTimer = 0;
+    const waveSize = Math.min(maxTargetsOnScreen - activeCount, 1 + Math.floor(elapsed / 12));
+    for (let i = 0; i < waveSize; i++) {
+      if (targets.filter(t => !t.hit).length < maxTargetsOnScreen) {
+        const t = new Target();
+        t.x += i * 20;
+        targets.push(t);
+      }
     }
+    if (elapsed > 6) waveCooldown = spawnInterval * 0.5;
+  }
 
-    // Initialize UI
-    updateUI(90);
-  </script>
+  targets = targets.filter(t => !t.hit || t.opacity > 0);
+  targets.forEach(t => t.update(dt));
+
+  muzzleFlash *= 0.7;
+
+  if (timeLeft <= 0) {
+    timeLeft = 0;
+    drawBackground();
+    targets.forEach(t => t.draw());
+    drawGun();
+    drawCrosshair();
+    drawTimer();
+    endGame();
+    return;
+  }
+
+  drawBackground();
+  drawShotRings();
+  targets.forEach(t => t.draw());
+  drawParticles();
+  drawFloatingTexts();
+  drawGun();
+  drawCrosshair();
+  drawTimer();
+
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(() => {});
+</script>
 </body>
 </html>
